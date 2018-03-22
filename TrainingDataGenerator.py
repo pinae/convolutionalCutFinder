@@ -5,6 +5,7 @@ from keras.utils import Sequence
 from moviepy.editor import VideoFileClip
 from os import path, listdir
 from random import choice, randrange, random
+from skimage.transform import resize
 import re
 import numpy as np
 
@@ -47,7 +48,7 @@ class RandomlyEditedVideoTrainingDataGenerator(Sequence):
     def next(self, file_list):
         self.ensure_clip(file_list)
         while len(self.last_frames) < 2:
-            self.last_frames.append(self.current_clip.get_frame(self.current_pos))
+            self.last_frames.append(resize(self.current_clip.get_frame(self.current_pos), (1280, 720)))
             self.current_pos += 1 / self.current_clip.fps
         # 20% Chance for a cut
         if random() < 0.2 or self.current_pos + 2 / self.current_clip.fps > self.current_clip.duration:
@@ -56,15 +57,15 @@ class RandomlyEditedVideoTrainingDataGenerator(Sequence):
             filtered_file_list.remove(self.current_clip_filename)
             self.ensure_clip(filtered_file_list)
             self.last_frames = self.last_frames[-2:]
-            self.last_frames.append(self.current_clip.get_frame(self.current_pos))
+            self.last_frames.append(resize(self.current_clip.get_frame(self.current_pos), (1280, 720)))
             data_set = np.array(self.last_frames), np.array([1.0, 0.0])
             self.current_pos += 1 / self.current_clip.fps
-            self.last_frames.append(self.current_clip.get_frame(self.current_pos))
+            self.last_frames.append(resize(self.current_clip.get_frame(self.current_pos), (1280, 720)))
             return data_set
         else:
             self.last_frames = self.last_frames[-2:]
             self.current_pos += 1 / self.current_clip.fps
-            self.last_frames.append(self.current_clip.get_frame(self.current_pos))
+            self.last_frames.append(resize(self.current_clip.get_frame(self.current_pos), (1280, 720)))
             return np.array(self.last_frames), np.array([0.0, 1.0])
 
     def __getitem__(self, idx):
