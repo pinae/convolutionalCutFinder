@@ -48,7 +48,7 @@ class RandomlyEditedVideoTrainingDataGenerator(Sequence):
     def next(self, file_list):
         self.ensure_clip(file_list)
         while len(self.last_frames) < 2:
-            self.last_frames.append(resize(self.current_clip.get_frame(self.current_pos), (1280, 720)))
+            self.last_frames.append(resize(self.current_clip.get_frame(self.current_pos), (1280, 720), mode='constant'))
             self.current_pos += 1 / self.current_clip.fps
         # 20% Chance for a cut
         if random() < 0.2 or self.current_pos + 2 / self.current_clip.fps > self.current_clip.duration:
@@ -57,15 +57,15 @@ class RandomlyEditedVideoTrainingDataGenerator(Sequence):
             filtered_file_list.remove(self.current_clip_filename)
             self.ensure_clip(filtered_file_list)
             self.last_frames = self.last_frames[-2:]
-            self.last_frames.append(resize(self.current_clip.get_frame(self.current_pos), (1280, 720)))
+            self.last_frames.append(resize(self.current_clip.get_frame(self.current_pos), (1280, 720), mode='constant'))
             data_set = np.array(self.last_frames), np.array([1.0, 0.0])
             self.current_pos += 1 / self.current_clip.fps
-            self.last_frames.append(resize(self.current_clip.get_frame(self.current_pos), (1280, 720)))
+            self.last_frames.append(resize(self.current_clip.get_frame(self.current_pos), (1280, 720), mode='constant'))
             return data_set
         else:
             self.last_frames = self.last_frames[-2:]
             self.current_pos += 1 / self.current_clip.fps
-            self.last_frames.append(resize(self.current_clip.get_frame(self.current_pos), (1280, 720)))
+            self.last_frames.append(resize(self.current_clip.get_frame(self.current_pos), (1280, 720), mode='constant'))
             return np.array(self.last_frames), np.array([0.0, 1.0])
 
     def __getitem__(self, idx):
@@ -73,13 +73,13 @@ class RandomlyEditedVideoTrainingDataGenerator(Sequence):
         for i, filename in enumerate(file_list):
             if not self.filename_regex.match(filename):
                 file_list.pop(i)
-        batch_X = []
+        batch_x = []
         batch_y = []
         for i in range(self.__len__()):
             x, y = self.next([path.join(self.video_folder, filename) for filename in file_list])
-            batch_X.append(x)
+            batch_x.append(x)
             batch_y.append(y)
-        return np.array(batch_X), np.array(batch_y)
+        return np.array(batch_x), np.array(batch_y)
 
 
 if __name__ == "__main__":
