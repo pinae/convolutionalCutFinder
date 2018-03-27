@@ -15,8 +15,10 @@ class NoUsableTrainingData(Exception):
 
 
 class RandomlyEditedVideoTrainingDataGenerator(Sequence):
-    def __init__(self, video_folder):
+    def __init__(self, video_folder, batch_size=10, image_size=(1280, 720)):
         self.video_folder = video_folder
+        self.batch_size = batch_size
+        self.size = image_size
         self.current_clip = None
         self.current_clip_filename = None
         self.filename_regex = re.compile(r".*\.(mp4|webm|avi|ogv)$")
@@ -24,7 +26,7 @@ class RandomlyEditedVideoTrainingDataGenerator(Sequence):
         self.current_pos = 0
 
     def __len__(self):
-        return 10
+        return self.batch_size
 
     @staticmethod
     def get_clip_frame_count(clip):
@@ -48,7 +50,7 @@ class RandomlyEditedVideoTrainingDataGenerator(Sequence):
     def next(self, file_list):
         self.ensure_clip(file_list)
         while len(self.last_frames) < 2:
-            self.last_frames.append(resize(self.current_clip.get_frame(self.current_pos), (1280, 720), mode='constant'))
+            self.last_frames.append(resize(self.current_clip.get_frame(self.current_pos), self.size, mode='constant'))
             self.current_pos += 1 / self.current_clip.fps
         # 20% Chance for a cut
         if random() < 0.2 or self.current_pos + 2 / self.current_clip.fps > self.current_clip.duration:
@@ -57,15 +59,15 @@ class RandomlyEditedVideoTrainingDataGenerator(Sequence):
             filtered_file_list.remove(self.current_clip_filename)
             self.ensure_clip(filtered_file_list)
             self.last_frames = self.last_frames[-2:]
-            self.last_frames.append(resize(self.current_clip.get_frame(self.current_pos), (1280, 720), mode='constant'))
+            self.last_frames.append(resize(self.current_clip.get_frame(self.current_pos), self.size, mode='constant'))
             data_set = np.array(self.last_frames), np.array([1.0, 0.0])
             self.current_pos += 1 / self.current_clip.fps
-            self.last_frames.append(resize(self.current_clip.get_frame(self.current_pos), (1280, 720), mode='constant'))
+            self.last_frames.append(resize(self.current_clip.get_frame(self.current_pos), self.size, mode='constant'))
             return data_set
         else:
             self.last_frames = self.last_frames[-2:]
             self.current_pos += 1 / self.current_clip.fps
-            self.last_frames.append(resize(self.current_clip.get_frame(self.current_pos), (1280, 720), mode='constant'))
+            self.last_frames.append(resize(self.current_clip.get_frame(self.current_pos), self.size, mode='constant'))
             return np.array(self.last_frames), np.array([0.0, 1.0])
 
     def __getitem__(self, idx):
